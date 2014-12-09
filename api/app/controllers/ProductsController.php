@@ -16,5 +16,15 @@ class ProductsController extends BaseAPIController {
         Artisan::call('products');
         return Cache::get(self::PRODUCTS_CACHE_KEY);
     }
+    /**
+     * @method getCategoryProducts
+     * @return string
+     */
+    public function getCategoryProducts($id) {
+        return Response::json($this->api->getProductsByCategory($id));
+    }
+
+
+
 
 }

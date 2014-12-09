@@ -110,5 +110,6 @@ interface ProviderInterface {
      * @return array
      */
     public function getAccount();
-    
+
+
 }

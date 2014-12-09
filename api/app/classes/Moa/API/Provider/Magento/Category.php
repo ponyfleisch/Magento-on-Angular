@@ -65,7 +65,7 @@ trait Category {
                 // Prepare the model for appending to the collection.
                 $model = array(
                     'id'            => (int) $subCategory->getId(),
-                    'ident'         => $this->_createIdent($subCategory->getName()),
+                    'ident'         => $this->createIdent($subCategory->getName()),
                     'name'          => $subCategory->getName(),
                     'productCount'  => $productCount($subCategory->getId()),
                 );
@@ -82,4 +82,25 @@ trait Category {
         return $collection;
     }
 
+    public function getCategoryFilters($id){
+        $items = [];
+        $filterCollection = \Mage::getResourceModel('aw_layerednavigation/filter_collection')
+            ->addFilterAttributes(\Mage::app()->getStore()->getId())
+            ->addIsEnabledFilter()
+            ->addCategoryFilter($id)
+            ->sortByPosition()
+        ;
+        foreach ($filterCollection as $filter) {
+            $filter->setStoreId(\Mage::app()->getStore()->getId());
+            $itemData = $filter->getData();
+            $itemData['id'] = $itemData['entity_id'];
+//            $options = $filter->getOptionCollection();
+//            $itemData['options'] = [];
+//            foreach($options as $option){
+//                $itemData['options'][] = $option->getData();
+//            }
+            $items[] = $itemData;
+        }
+        return $items;
+    }
 }

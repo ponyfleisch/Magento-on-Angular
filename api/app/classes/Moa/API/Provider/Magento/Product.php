@@ -157,6 +157,36 @@ trait Product {
         return $response;
     }
 
+
+    /**
+     * @param int $id
+     */
+    public function getProductsByCategory($id){
+        $collection = \Mage::getModel('catalog/category')->load($id)
+            ->getProductCollection()
+            ->addAttributeToSelect('*')
+            ->addAttributeToFilter('status', 1)
+            ->addAttributeToFilter('visibility', array('neq' => 1))
+            ->load();
+
+        $output = [];
+
+        /** @var \Mage_Catalog_Model_Product $product */
+        foreach($collection as $product){
+            $output[] = [
+                'id'                => (int) $product->getId(),
+                'name'              => trim($product->getName()),
+                'ident'             => trim($this->createIdent($product->getName())),
+                'price'             => (float) $product->getPrice(),
+                'image'             => $product->getMediaConfig()->getMediaShortUrl($product->getData('image')),
+                'manufacturer'      => (int) $product->getData('manufacturer'),
+            ];
+        }
+
+        return $output;
+
+    }
+
     /**
      * @method getCollectionForCache
      * @param callable $infolog

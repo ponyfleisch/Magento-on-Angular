@@ -19,7 +19,9 @@ class MagentoProvider extends AbstractProvider implements ProviderInterface {
         Magento\Cart,
         Magento\Category,
         Magento\Currency,
-        Magento\Product;
+        Magento\Content,
+        Magento\Product,
+        Magento\Filter;
 
     /**
      * Initialize the Mage environment.

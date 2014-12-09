@@ -14,9 +14,13 @@
 Route::get('/products', 'ProductsController@getProducts');
 
 Route::get('/product/{id}', 'ProductController@getProduct');
-Route::get('/product/shoes/{id}', 'ProductController@getShoe');
 
 Route::get('/categories', 'CategoriesController@getCategories');
+
+Route::get('/category/{id}/products', 'ProductsController@getCategoryProducts');
+Route::get('/category/{id}/filters', 'CategoryController@getCategoryFilters');
+
+Route::get('filter/{id}/options', 'FilterController@getFilterOptions');
 
 Route::get('/attributes/{name}', 'AttributesController@getOptions');
 
@@ -30,3 +34,5 @@ Route::get('/account', 'AccountController@getAccount');
 Route::post('/account/login', 'AccountController@login');
 Route::get('/account/logout', 'AccountController@logout');
 Route::post('/account/register', 'AccountController@register');
+
+Route::get('/content/{identifier}', 'ContentController@getContent');
