@@ -24,6 +24,10 @@ class ProductsController extends BaseAPIController {
         return Response::json($this->api->getProductsByCategory($id));
     }
 
+    public function getFilterProducts($pagesize, $currentpage){
+        $filter = json_decode(Input::get('filter'));
+        return Response::json($this->api->getProductsByFilter($filter, $pagesize, $currentpage));
+    }
 
 
 

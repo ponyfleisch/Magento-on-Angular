@@ -248,4 +248,35 @@ trait Product {
         return $collection;
     }
 
+    public function getProductsByFilter($filter, $pagesize, $currentpage){
+        $collection = \Mage::getModel('catalog/product')->getCollection();
+        $collection->addAttributeToSelect('*')
+            ->addAttributeToFilter('status', 1)
+            ->addAttributeToFilter('visibility', array('neq' => 1))
+            ->setPageSize($pagesize)
+            ->setCurPage($currentpage);
+
+        foreach($filter as $filterItem){
+            $collection->addAttributeToFilter($filterItem['field'], array($filterItem['op'], $filterItem['value']));
+        };
+
+        $products = $collection->load();
+
+        $output = [];
+
+        /** @var \Mage_Catalog_Model_Product $product */
+        foreach($products as $product){
+            $output[] = [
+                'id'                => (int) $product->getId(),
+                'name'              => trim($product->getName()),
+                'ident'             => trim($this->createIdent($product->getName())),
+                'price'             => (float) $product->getPrice(),
+                'image'             => $product->getMediaConfig()->getMediaShortUrl($product->getData('image')),
+                'manufacturer'      => (int) $product->getData('manufacturer'),
+            ];
+        }
+
+        return $output;
+    }
+
 }

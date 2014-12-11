@@ -13,7 +13,13 @@ trait Filter {
         $filter = \Mage::getResourceModel('aw_layerednavigation/filter_collection')->getItemById($id);
 
         foreach ($filter->getOptionCollection() as $option) {
-            $items[] = $option->getData();
+            $data = $option->getData();
+            $item = [
+                'title' => $data['title'],
+                'id' => $data['additional_data']['option_id'],
+            ];
+
+            $items[] = $item;
         }
         return $items;
     }

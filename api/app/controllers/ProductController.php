@@ -11,4 +11,5 @@ class ProductController extends BaseAPIController {
         return Response::json($this->api->getProduct($productId));
     }
 
+
 }

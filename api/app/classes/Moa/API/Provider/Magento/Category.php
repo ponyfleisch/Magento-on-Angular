@@ -50,29 +50,29 @@ trait Category {
                 'id'            => (int) $category->getId(),
                 'ident'         => $this->createIdent($category->getName()),
                 'name'          => $category->getName(),
-                'productCount'  => $productCount($category->getId()),
-                'children'      => array()
+                'productCount'  => $this->productCount($category->getId()),
+                // 'children'      => array()
             );
 
-            // Discover the category's sub-categories.
-            $subCategoryIds = explode(',', $category->getChildren());
-
-            foreach ($subCategoryIds as $subCategoryId) {
-
-                // Load the sub-categories one-by-one, pushing them into the array.
-                $subCategory = \Mage::getModel('catalog/category')->load($subCategoryId);
-
-                // Prepare the model for appending to the collection.
-                $model = array(
-                    'id'            => (int) $subCategory->getId(),
-                    'ident'         => $this->createIdent($subCategory->getName()),
-                    'name'          => $subCategory->getName(),
-                    'productCount'  => $productCount($subCategory->getId()),
-                );
-
-                $current['children'][] = $model;
-
-            }
+//            // Discover the category's sub-categories.
+//            $subCategoryIds = explode(',', $category->getChildren());
+//
+//            foreach ($subCategoryIds as $subCategoryId) {
+//
+//                // Load the sub-categories one-by-one, pushing them into the array.
+//                $subCategory = \Mage::getModel('catalog/category')->load($subCategoryId);
+//
+//                // Prepare the model for appending to the collection.
+//                $model = array(
+//                    'id'            => (int) $subCategory->getId(),
+//                    'ident'         => $this->createIdent($subCategory->getName()),
+//                    'name'          => $subCategory->getName(),
+//                    'productCount'  => $productCount($subCategory->getId()),
+//                );
+//
+//                $current['children'][] = $model;
+//
+//            }
 
             // Finally we can place the category in the list of categories.
             $collection[] = $current;
@@ -80,6 +80,49 @@ trait Category {
         }
 
         return $collection;
+    }
+
+    private function productCount($id){
+        $products = \Mage::getModel('catalog/category')->load($id)
+            ->getProductCollection()
+            ->addAttributeToSelect('entity_id')
+            ->addAttributeToFilter('status', 1)
+            ->addAttributeToFilter('visibility', 4);
+
+        return count($products);
+    }
+
+    public function getSubcategories($id){
+        $items = [];
+        $category = $category = \Mage::getModel('catalog/category')->load((int)$id);
+        $children = $category->getChildrenCategories();
+
+
+//         $subCategoryIds = explode(',', $category->getChildren());
+
+//        foreach ($subCategoryIds as $subCategoryId) {
+
+            // Load the sub-categories one-by-one, pushing them into the array.
+//             $subCategory = \Mage::getModel('catalog/category')->load($subCategoryId);
+
+            // Prepare the model for appending to the collection.
+
+        foreach($children as $subCategory){
+
+            $model = array(
+                'id'            => (int) $subCategory->getId(),
+                'ident'         => $this->createIdent($subCategory->getName()),
+                'name'          => $subCategory->getName(),
+                'productCount'  => $this->productCount($subCategory->getId()),
+            );
+
+            $items[] = $model;
+
+        }
+
+        return $items;
+
+
     }
 
     public function getCategoryFilters($id){
@@ -93,13 +136,15 @@ trait Category {
         foreach ($filterCollection as $filter) {
             $filter->setStoreId(\Mage::app()->getStore()->getId());
             $itemData = $filter->getData();
-            $itemData['id'] = $itemData['entity_id'];
-//            $options = $filter->getOptionCollection();
-//            $itemData['options'] = [];
-//            foreach($options as $option){
-//                $itemData['options'][] = $option->getData();
-//            }
-            $items[] = $itemData;
+
+            $item = [
+                'id' => $itemData['entity_id'],
+                'title' => $itemData['title'],
+                'type' => $itemData['type'],
+                'raw' => $itemData
+            ];
+
+            $items[$itemData['code']] = $item;
         }
         return $items;
     }

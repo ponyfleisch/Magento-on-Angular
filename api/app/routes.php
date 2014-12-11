@@ -11,13 +11,14 @@
 |
 */
 
-Route::get('/products', 'ProductsController@getProducts');
+Route::get('/products/filter/{pagesize}/{currentpage}', 'ProductsController@getFilterProducts');
 
 Route::get('/product/{id}', 'ProductController@getProduct');
 
 Route::get('/categories', 'CategoriesController@getCategories');
 
 Route::get('/category/{id}/products', 'ProductsController@getCategoryProducts');
+Route::get('/category/{id}/subcategories', 'CategoryController@getSubcategories');
 Route::get('/category/{id}/filters', 'CategoryController@getCategoryFilters');
 
 Route::get('filter/{id}/options', 'FilterController@getFilterOptions');

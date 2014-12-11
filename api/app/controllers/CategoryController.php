@@ -5,4 +5,8 @@ class CategoryController extends BaseAPIController {
         return Response::json($this->api->getCategoryFilters($id));
     }
 
+    public function getSubcategories($id){
+        return Response::json($this->api->getSubcategories($id));
+    }
+
 }
