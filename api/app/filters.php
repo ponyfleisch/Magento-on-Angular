@@ -14,8 +14,7 @@
 App::before(function($request)
 {
     // Enable CORS
-    // In production, replace * with http://yourdomain.com
-    header("Access-Control-Allow-Origin: *");
+    header("Access-Control-Allow-Origin: ".Config::get('moa.api.CORS'));
     header('Access-Control-Allow-Credentials: true');
 
     if (Request::getMethod() == "OPTIONS") {
