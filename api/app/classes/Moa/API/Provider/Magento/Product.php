@@ -256,9 +256,33 @@ trait Product {
             ->setPageSize($pagesize)
             ->setCurPage($currentpage);
 
-        foreach($filter as $filterItem){
-            $collection->addAttributeToFilter($filterItem['field'], array($filterItem['op'], $filterItem['value']));
+        // throw new \Exception("$pagesize $currentpage");
+
+
+        $baseCategory = intval($filter['base_category']);
+
+        $filterCategory = $baseCategory;
+
+        $filters = $this->getCategoryFilters($baseCategory);
+
+        foreach($filter as $filterName => $filterOptions){
+            if($filters[$filterName]){
+                switch($filters[$filterName]['type']){
+                    case 'option_attribute':
+                        $collection->addAttributeToFilter($filters[$filterName]['code'], array("in" => $filterOptions));
+                        break;
+                    case 'decimal_price':
+                        $collection->addAttributeToFilter('price', array("gt" => $filterOptions[0], "lt" => $filterOptions[1]));
+                }
+            }else{
+                if($filterName == 'subcategory'){
+                    $filterCategory = $filterOptions;
+                }
+            }
+            $collection->addCategoryFilter(\Mage::getModel('catalog/category')->load($filterCategory));
         };
+
+
 
         $products = $collection->load();
 
@@ -278,5 +302,31 @@ trait Product {
 
         return $output;
     }
+
+    public function getCategoryFilters($id){
+        $items = [];
+        $filterCollection = \Mage::getResourceModel('aw_layerednavigation/filter_collection')
+            ->addFilterAttributes(\Mage::app()->getStore()->getId())
+            ->addIsEnabledFilter()
+            ->addCategoryFilter($id)
+            ->sortByPosition()
+        ;
+        foreach ($filterCollection as $filter) {
+            $filter->setStoreId(\Mage::app()->getStore()->getId());
+            $itemData = $filter->getData();
+
+            $item = [
+                'id' => $itemData['entity_id'],
+                'title' => $itemData['title'],
+                'type' => $itemData['type'],
+                'code' => $itemData['additional_data']['attribute_code'],
+                'raw' => $itemData
+            ];
+
+            $items[$itemData['code']] = $item;
+        }
+        return $items;
+    }
+
 
 }

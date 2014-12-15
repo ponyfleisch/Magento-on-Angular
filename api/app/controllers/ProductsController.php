@@ -25,7 +25,7 @@ class ProductsController extends BaseAPIController {
     }
 
     public function getFilterProducts($pagesize, $currentpage){
-        $filter = json_decode(Input::get('filter'));
+        $filter = json_decode(Input::get('filter'), true);
         return Response::json($this->api->getProductsByFilter($filter, $pagesize, $currentpage));
     }
 
