@@ -12,6 +12,7 @@
 */
 
 Route::get('/products/filter/{pagesize}/{currentpage}', 'ProductsController@getFilterProducts');
+Route::get('/filterOptions/', 'FilterController@getFilterOptionsByFilter');
 
 Route::get('/product/{id}', 'ProductController@getProduct');
 

@@ -10,6 +10,7 @@ trait Filter {
     public function getFilterOptions($id){
         $items = [];
 
+        /** @var \AW_Layerednavigation_Model_Filter $filter */
         $filter = \Mage::getResourceModel('aw_layerednavigation/filter_collection')->getItemById($id);
 
         foreach ($filter->getOptionCollection() as $option) {
