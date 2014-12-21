@@ -447,7 +447,9 @@ trait Product {
                     'raw' => $data
                 ];
 
-                $items[$code]['options'][] = $item;
+                if($items[$code]['count'][$data['option_id']]){
+                    $items[$code]['options'][] = $item;
+                }
             }
         }
 
