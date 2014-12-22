@@ -248,128 +248,38 @@ trait Product {
         return $collection;
     }
 
-    public function getProductsByFilter($filter, $pagesize, $currentpage){
-//        /** @var \Mage_Catalog_Model_Layer $layer */
-//        $layer = \Mage::getModel('catalog/layer');
-//
-//        /** @var \Mage_Catalog_Model_Layer_Filter_Attribute $filter */
-//        $filter = \Mage::getModel('catalog/layer_filter_attribute');
-//
-//        // $attribute = \Mage::getModel('catalog/eav_')
-//
-//        // $filter->setAttributeModel()
-//
-//        $category = \Mage::getModel("catalog/category")->load(5);
-//        $layer->setCurrentCategory($category);
-//        $attributes = $layer->getFilterableAttributes();
-//
-//        $results = [];
-//
-//        foreach($attributes as $attribute){
-//            if($attribute->getName() == 'style'){
-//                /** @var \Mage_Catalog_Model_Layer_Filter_Attribute $filter */
-//                $filter = \Mage::getModel('catalog/layer_filter_attribute');
-//                $filter->setAttributeModel($attribute);
-//                $filter->setRequestVar("2932");
-////                $filter->setValue(932399);
-//                // $filter->setRequestVar()
-//
-//                /** @var \Mage_Catalog_Model_Layer_Filter_Item $filterItem */
-//                $filterItem = \Mage::getModel('catalog/layer_filter_item');
-//
-//                $filterItem->setFilter($filter);
-//
-//                $layer->getState()->addFilter($filterItem);
-//                $layer->apply();
-//            }
-//
-//        }
-//
-//        $attributes = $layer->getFilterableAttributes();
-//
-//        foreach ($attributes as $attribute) {
-//            if ($attribute->getAttributeCode() == 'price') {
-//                $filterBlockName = 'catalog/layer_filter_price';
-//            } elseif ($attribute->getBackendType() == 'decimal') {
-//                $filterBlockName = 'catalog/layer_filter_decimal';
-//            } else {
-//                $filterBlockName = 'catalog/layer_filter_attribute';
-//            }
-//
-//            $layout = \Mage::getSingleton('core/layout');
-//
-//            /** @var \Mage_Catalog_Block_Layer_Filter_Attribute $result */
-//            $result = $layout->createBlock($filterBlockName)->setLayer($layer)->setAttributeModel($attribute)->init();
-//
-//            $results[$attribute->getName()] = [];
-//
-//            $results['classes'][] = get_class($attribute);
-//
-//            foreach ($result->getItems() as $option) {
-//                $results[$attribute->getName()][$option->getLabel()] = $option->getValue();
-//
-//            }
-//        }
-//
-//        return $results;
+    public function getProductsByFilter($pagesize, $currentpage){
+        $layerBlock = $this->getLayerBlock();
 
+        $request = \Mage::app()->getRequest();
 
+        /** @var \Mage_Catalog_Model_Layer $layer */
+        $layer = $layerBlock->getLayer();
 
-
-        $state = $layer->getState();
-
-        /** @var \Mage_Catalog_Model_Layer_Filter_Attribute $filter */
-        $filter = \Mage::getModel('catalog/layer_filter_attribute');
-
-
-        $state->addFilter();
-
-
-
-
-        /** @var \Mage_Catalog_Model_Resource_Product_Collection $collection */
-        $collection = \Mage::getModel('catalog/product')->getCollection();
-        $collection->addAttributeToSelect('*')
-            ->addAttributeToFilter('status', 1)
-            ->addAttributeToFilter('visibility', array('neq' => 1))
-            ->setPageSize($pagesize)
-            ->setCurPage($currentpage);
-
-        if($filter['sort']){
-            $sort = explode(' ', $filter['sort']);
-            // $collection->getSelect()->order($filter['sort']);
-            // $collection->setOrder($sort[0], strtolower($sort[1]));
-            // $collection->addOrder($sort[0], strtolower($sort[1]));
-            // $collection->addPriceData();
-            // $collection->addAttributeToSort($sort[0], strtolower($sort[1]));
+        foreach ($layerBlock->getFilterList() as $filter) {
+            $filter->setLayer($layer)->apply($request);
         }
 
+//        $collection = \Mage::getResourceModel('catalog/product_collection');
+//
+//        $layer->prepareProductCollection($collection);
 
-        $baseCategory = intval($filter['base_category']);
+        $collection = $layer->getProductCollection();
 
-        $filterCategory = $baseCategory;
+        $collection->setPageSize($pagesize);
+        $collection->setCurPage($currentpage);
 
-        $filters = $this->getCategoryFilters($baseCategory);
+        switch($request->getParam('sort')){
+            case 'price ASC':
+                $collection->setOrder('price', 'ASC');
+                break;
+            case 'price DESC':
+                $collection->setOrder('price', 'DESC');
+                break;
+            default:
+                $collection->setOrder('entity_id', 'DESC');
 
-        foreach($filter as $filterName => $filterOptions){
-            if($filters[$filterName]){
-                switch($filters[$filterName]['type']){
-                    case 'option_attribute':
-                        $collection->addAttributeToFilter($filters[$filterName]['code'], array("in" => $filterOptions));
-                        break;
-                    case 'decimal_price':
-                        $collection->addAttributeToFilter('price', array("gt" => $filterOptions[0], "lt" => $filterOptions[1]));
-                }
-            }else{
-                if($filterName == 'subcategory'){
-                    $filterCategory = $filterOptions;
-                }
-            }
-
-            $collection->addCategoryFilter(\Mage::getModel('catalog/category')->load($filterCategory));
-        };
-
-
+        }
 
         $products = $collection->load();
 
@@ -381,37 +291,53 @@ trait Product {
                 'id'                => (int) $product->getId(),
                 'name'              => trim($product->getName()),
                 'ident'             => trim($this->createIdent($product->getName())),
-                'price'             => (float) $product->getPrice(),
+                'price'             => (float) $product->getFinalPrice(),
                 'image'             => $product->getMediaConfig()->getMediaShortUrl($product->getData('image')),
                 'manufacturer'      => (int) $product->getData('manufacturer'),
+                // 'raw' => $product->getData()
             ];
         }
 
         return $output;
     }
 
-    public function getFiltersByFilter($filter){
+    /**
+     * @return \AW_Layerednavigation_Block_Layer
+     */
+    protected function getLayerBlock(){
         $items = [];
 
         $request = \Mage::app()->getRequest();
+
+        $layer = \Mage::getSingleton('catalog/layer');
+
+        if($request->getParam('category')){
+            $layer->setCurrentCategory(\Mage::getModel('catalog/category')->load($request->getParam('category')));
+        }
 
 
         /** @var \AW_Layerednavigation_Block_Layer $layer */
         $layerBlock = \Mage::app()->getLayout()->createBlock('aw_layerednavigation/layer');
 
 
-        // $layer->setRequest($request);
+        return $layerBlock;
+    }
 
+    public function getFiltersByFilter(){
+        $items = [];
+        $request = \Mage::app()->getRequest();
+
+        $layerBlock = $this->getLayerBlock();
         $layer = $layerBlock->getLayer();
 
-
-
-        if($request->getParam('category')){
-            $layer->setCurrentCategory(\Mage::getModel('catalog/category')->load($request->getParam('category')));
+        // this has to be done in a seperate pass so all filters are set
+        foreach($layerBlock->getFilterList() as $filter){
+            // $filter->setLayer($layer)->apply($request);
         }
 
         /** @var \AW_Layerednavigation_Model_Filter $filter */
         foreach($layerBlock->getFilterList() as $filter){
+            // $filter->setLayer($layer)->apply($request);
             $code = $filter->getData('code');
 
             if($code == 'category' || count($filter->getCount()) == 0) continue;
@@ -429,7 +355,7 @@ trait Product {
                 'title' => $itemData['title'],
                 'type' => $itemData['type'],
                 'code' => $itemData['additional_data']['attribute_code'],
-//                'raw' => $itemData
+                // 'raw' => $itemData
             ];
             $items[$code]['count'] = $filter->getCount();
             $items[$code]['options'] = [];
@@ -444,7 +370,7 @@ trait Product {
                 $item = [
                     'title' => $data['title'],
                     'id' => $data['option_id'],
-                    'raw' => $data
+                    // 'raw' => $data
                 ];
 
                 if($items[$code]['count'][$data['option_id']]){

@@ -6,8 +6,7 @@ class FilterController extends BaseAPIController {
     }
 
     public function getFilterOptionsByFilter(){
-        $filter = json_decode(Input::get('filter'), true);
-        return Response::json($this->api->getFiltersByFilter($filter));
+        return Response::json($this->api->getFiltersByFilter());
     }
 
 }
