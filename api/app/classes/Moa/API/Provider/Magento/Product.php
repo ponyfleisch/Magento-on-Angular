@@ -256,13 +256,6 @@ trait Product {
         /** @var \Mage_Catalog_Model_Layer $layer */
         $layer = $layerBlock->getLayer();
 
-        foreach ($layerBlock->getFilterList() as $filter) {
-            $filter->setLayer($layer)->apply($request);
-        }
-
-//        $collection = \Mage::getResourceModel('catalog/product_collection');
-//
-//        $layer->prepareProductCollection($collection);
 
         $collection = $layer->getProductCollection();
 
@@ -287,12 +280,19 @@ trait Product {
 
         /** @var \Mage_Catalog_Model_Product $product */
         foreach($products as $product){
+            /** @var \Mage_Catalog_Helper_Image $image */
+            $image = \Mage::helper('catalog/image')->init($product, 'small_image')->resize(135)->__toString();
+
             $output[] = [
                 'id'                => (int) $product->getId(),
                 'name'              => trim($product->getName()),
                 'ident'             => trim($this->createIdent($product->getName())),
+                'size'              => $product->getAttributeText('size'),
+                'designer'          => $product->getAttributeText('designer'),
                 'price'             => (float) $product->getFinalPrice(),
-                'image'             => $product->getMediaConfig()->getMediaShortUrl($product->getData('image')),
+                'oldPrice'          => (float) $product->getPrice(),
+                'image'             => $product->getMediaConfig()->getMediaShortUrl($product->getData('small_image')),
+                'smallImage'        => strstr($image, 'catalog/product'),
                 'manufacturer'      => (int) $product->getData('manufacturer'),
                 // 'raw' => $product->getData()
             ];
