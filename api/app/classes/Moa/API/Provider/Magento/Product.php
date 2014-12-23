@@ -256,7 +256,6 @@ trait Product {
         /** @var \Mage_Catalog_Model_Layer $layer */
         $layer = $layerBlock->getLayer();
 
-
         $collection = $layer->getProductCollection();
 
         $collection->setPageSize($pagesize);
@@ -280,6 +279,7 @@ trait Product {
 
         /** @var \Mage_Catalog_Model_Product $product */
         foreach($products as $product){
+
             /** @var \Mage_Catalog_Helper_Image $image */
             $image = \Mage::helper('catalog/image')->init($product, 'small_image')->resize(135)->__toString();
 
@@ -291,6 +291,7 @@ trait Product {
                 'designer'          => $product->getAttributeText('designer'),
                 'price'             => (float) $product->getFinalPrice(),
                 'oldPrice'          => (float) $product->getPrice(),
+                'status'            => intval($product->getIsSalable()),
                 'image'             => $product->getMediaConfig()->getMediaShortUrl($product->getData('small_image')),
                 'smallImage'        => strstr($image, 'catalog/product'),
                 'manufacturer'      => (int) $product->getData('manufacturer'),
