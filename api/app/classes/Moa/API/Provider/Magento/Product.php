@@ -43,20 +43,38 @@ trait Product {
         /** @var Mage_CatalogInventory_Model_Stock_Item $stockModel */
         $stockModel = \Mage::getModel('cataloginventory/stock_item')->loadByProduct($product);
 
+        /** @var \Mage_Catalog_Helper_Image $helper */
+        $helper = \Mage::helper('catalog/image');
+
+        $images = $product->getMediaGallery('images');
+
+        $imageUrls = [];
+
+        foreach($images as $image){
+            $imageUrls[] = strstr($helper->init($product, 'image', $image['file'])->resize(480)->__toString(), 'catalog/product');
+        }
+
+        $foo = 'bar';
+
         return array(
             'id'            => $product->getId(),
             'sku'           => $product->getSku(),
             'name'          => $product->getName(),
             'type'          => $product->getTypeId(),
-            'quantity'      => (int) $stockModel->getQty(),
-            'friendUrl'     => $friendModel->canEmailToFriend() ? \Mage::app()->getHelper('catalog/product')->getEmailToFriendUrl($product) : null,
-            'price'         => (float) $product->getPrice(),
+            // 'quantity'      => (int) $stockModel->getQty(),
+            // 'friendUrl'     => $friendModel->canEmailToFriend() ? \Mage::app()->getHelper('catalog/product')->getEmailToFriendUrl($product) : null,
+            'price'         => (float) $product->getFinalPrice(),
+            'oldPrice'      => (float) $product->getPrice(),
+            'condition'     => $product->getAttributeText('condition'),
+            'size'          => $product->getAttributeText('size'),
             'colour'        => (int) $product->getData('color'),
             'manufacturer'  => (int) $product->getData('manufacturer'),
+            'status'        => intval($product->getIsSalable()),
+            'designer'      => $product->getAttributeText('designer'),
             'description'   => nl2br(trim($product->getDescription())),
-            'largeImage'    => (string) str_replace('localhost', self::IMAGE_PATH, $product->getMediaConfig()->getMediaUrl($product->getData('image'))),
+            'largeImage'    => strstr($product->getMediaConfig()->getMediaUrl($product->getData('image')), 'catalog/product'),
             'similar'       => $product->getRelatedProductIds(),
-            'gallery'       => $product->getMediaGalleryImages(),
+            'images'       => $imageUrls,
             'products'      => $products,
             'models'        => $models
         );
