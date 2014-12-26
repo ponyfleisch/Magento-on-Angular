@@ -401,30 +401,4 @@ trait Product {
         return $items;
     }
 
-    public function getCategoryFilters($id){
-        $items = [];
-        $filterCollection = \Mage::getResourceModel('aw_layerednavigation/filter_collection')
-            ->addFilterAttributes(\Mage::app()->getStore()->getId())
-            ->addIsEnabledFilter()
-            ->addCategoryFilter($id)
-            ->sortByPosition()
-        ;
-        foreach ($filterCollection as $filter) {
-            $filter->setStoreId(\Mage::app()->getStore()->getId());
-            $itemData = $filter->getData();
-
-            $item = [
-                'id' => $itemData['entity_id'],
-                'title' => $itemData['title'],
-                'type' => $itemData['type'],
-                'code' => $itemData['additional_data']['attribute_code'],
-                'raw' => $itemData
-            ];
-
-            $items[$itemData['code']] = $item;
-        }
-        return $items;
-    }
-
-
 }
