@@ -330,12 +330,12 @@ trait Product {
 
         $layer = \Mage::getSingleton('catalog/layer');
 
-        if($request->getParam('category')){
-            $layer->setCurrentCategory(\Mage::getModel('catalog/category')->load($request->getParam('category')));
+        if($request->getParam('category_id')){
+            $layer->setCurrentCategory(\Mage::getModel('catalog/category')->load($request->getParam('category_id')));
         }
 
 
-        /** @var \AW_Layerednavigation_Block_Layer $layer */
+        /** @var \AW_Layerednavigation_Block_Layer $layerBlock */
         $layerBlock = \Mage::app()->getLayout()->createBlock('aw_layerednavigation/layer');
 
 
