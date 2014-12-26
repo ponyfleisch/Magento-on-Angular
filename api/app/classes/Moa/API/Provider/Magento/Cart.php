@@ -17,7 +17,7 @@ trait Cart {
      */
     public function addCartItem($productId, $quantity)
     {
-        $response = array('success' => true, 'error' => null, 'models' => array());
+        $response = array('success' => true, 'error' => null, 'cart' => array());
 
         try {
 
@@ -30,7 +30,7 @@ trait Cart {
             $basket->save();
 
             // Fetch the items from the user's basket.
-            $response['models'] = $this->getCartItems();
+            $response['cart'] = $this->getCartItems();
 
         } catch (\Exception $e) {
 
@@ -60,12 +60,17 @@ trait Cart {
      */
     public function removeCartItem($id)
     {
-        \Mage::getSingleton('checkout/cart')->getQuote()->removeItem($id)->save();
+        /** @var \Mage_Checkout_Model_Cart $cart */
+        $cart = \Mage::getSingleton('checkout/cart');
 
-        return array(
-            'success' => \Mage::getModel('checkout/cart')->save(),
-            'models'  => $this->getCartItems()
+        $cart->getQuote()->removeItem($id)->save();
+
+        $result = array(
+            'success' => $cart->save(),
+            'cart'  => $this->getCartItems()
         );
+
+        return $result;
     }
 
     /**
@@ -87,21 +92,37 @@ trait Cart {
         $grandTotal = $totals['grand_total']->getValue();
 
         foreach ($items as $item) {
+            $product = \Mage::getSingleton('catalog/product')->load($item->getProduct()->getEntityId());
 
-            if ($item->getProduct()->getTypeId() === 'simple') {
+            if ($product->getTypeId() === 'simple') {
                 $parentIds = \Mage::getResourceSingleton('catalog/product_type_configurable')
                                  ->getParentIdsByChild($item->getProduct()->getEntityId());
                 $parentId = (int) $parentIds[0];
             }
 
+            /** @var \Mage_Catalog_Helper_Image $image */
+            $image = \Mage::helper('catalog/image')->init($product, 'small_image')->resize(135)->__toString();
+
             $data[] = array(
-                'id'        => (int) $item->getProduct()->getEntityId(),
+                'id'        => (int) $product->getEntityId(),
                 'parentId'  => $parentId ?: null,
                 'itemId'    => (int) $item->getItemId(),
                 'quantity'  => (int) $item->getQty(),
-                'name'      => $item->getProduct()->getName(),
-                'price'     => $item->getPrice()
+                'product'   => [
+                    'name'              => trim($product->getName()),
+                    'ident'             => trim($this->createIdent($product->getName())),
+                    'size'              => $product->getAttributeText('size'),
+                    'designer'          => $product->getAttributeText('designer'),
+                    'price'             => (float) $product->getFinalPrice(),
+                    'oldPrice'          => (float) $product->getPrice(),
+                    'status'            => intval($product->getIsSalable()),
+                    'image'             => $product->getMediaConfig()->getMediaShortUrl($product->getData('small_image')),
+                    'smallImage'        => strstr($image, 'catalog/product'),
+                    'manufacturer'      => (int) $product->getData('manufacturer'),
+                ]
             );
+
+
         }
 
         return array('subTotal' => $subTotal, 'grandTotal' => $grandTotal, 'items' => $data);
