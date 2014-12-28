@@ -103,7 +103,7 @@ trait Account {
         $datum['gravatar'] = md5($datum['email']);
 
         // Otherwise the user is logged in. Voila!
-        return array('success' => true, 'model' => $datum);
+        return array('success' => true, 'loggedIn' => true, 'model' => $datum);
     }
 
     /**
