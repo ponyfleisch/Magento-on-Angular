@@ -11,6 +11,12 @@ class AccountController extends BaseAPIController {
 
     }
 
+    public function fbLogin() {
+        $token = Input::get('token');
+
+        return Response::json($this->api->fbLogin($token));
+    }
+
     public function logout() {
         return Response::json($this->api->logout());
     }

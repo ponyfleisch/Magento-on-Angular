@@ -159,4 +159,27 @@ trait Account {
         return $response;
     }
 
+    public function fbLogin($token){
+        /** @var \Mage_Customer_Model_Session $session */
+        $session = \Mage::getSingleton('customer/session');
+
+        $data = json_decode(file_get_contents('https://graph.facebook.com/me?access_token='.$token));
+
+        $email = $data->email;
+
+        if(!$email){
+            return array('success' => false, 'loggedIn' => false);
+        }
+
+        /** @var \Mage_Customer_Model_Customer $customer */
+        $customer = $this->getCustomerModel()->loadByEmail($data->email);
+
+        if($customer->getId()){
+            $session->setCustomerAsLoggedIn($customer);
+            return $this->getAccount();
+        }else{
+            $password = \Mage::helper('core')->getRandomString($length = 12);
+            return $this->register($data->first_name, $data->last_name, $email, $password);
+        }
+    }
 }
