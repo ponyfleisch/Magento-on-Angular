@@ -21,6 +21,7 @@ class MagentoProvider extends AbstractProvider implements ProviderInterface {
         Magento\Currency,
         Magento\Content,
         Magento\Product,
+        Magento\Order,
         Magento\Filter;
 
     /**
