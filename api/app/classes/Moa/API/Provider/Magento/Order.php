@@ -45,9 +45,15 @@ trait Order {
 
         $result = [];
 
-        foreach($helper->getStoreMethods() as $method){
-            // $result[$method->]
-            $result[$method->getCode()] = $method->getTitle();
+        $quote = $this->getQuote();
+
+        /** @var \Mage_Payment_Model_Method_Abstract $method */
+        foreach($helper->getStoreMethods(null, $quote) as $method){
+            if($method->canUseForCountry($quote->getBillingAddress()->getCountryId())){
+                $result[$method->getCode()] = $method->getTitle();
+            }
+
+
         }
 
         return $result;
@@ -65,17 +71,11 @@ trait Order {
 
         $address->setCollectShippingRates(true)->collectShippingRates()->save();
 
-        $rates = $this->getQuote()->getShippingAddress()->getGroupedAllShippingRates();
+        $rates = $address->getGroupedAllShippingRates();
 
-        foreach($methods as $code => $carrier)
-        {
-            if($methods = $carrier->getAllowedMethods())
-            {
-                foreach($methods as $methodCode => $method)
-                {
-                    $key = $code . '_' . $methodCode;
-                    $result[$key] = $method;
-                }
+        foreach($rates as $rate){
+            foreach($rate as $choice){
+                $result[$choice->getCode()] = ['title' => $choice->getMethodTitle(), 'price' => $choice->getPrice()];
             }
         }
 
@@ -93,10 +93,13 @@ trait Order {
     public function getState(){
         $this->frontEndSession();
 
+        // i don't know why, but without this, not all shipping methods show.
+        $this->saveState();
+
         $customerSession = $this->getCustomerSession();
         $result = [];
 
-        $result['payment_methods'] = $this->getPaymentMethods(\Mage::app()->getStore()->getId());
+        $result['payment_methods'] = $this->getPaymentMethods();
         $result['shipping_methods'] = $this->getShippingMethods();
 
         $customer = $this->getCustomer();
@@ -105,6 +108,7 @@ trait Order {
 
 
         $quote = $this->getCheckoutSession()->getQuote();
+
 //
 //        $quote->getShippingAddress()->setCountryId('SG');
 //        $quote->getBillingAddress()->setCountryId('SG');
@@ -122,6 +126,7 @@ trait Order {
 
         // $result['quote'] = $quote->getData();
 
+
         $result['billing_address'] = $this->getAddressValues($quote->getBillingAddress());
 
         $result['shipping_address'] = $this->getAddressValues($quote->getShippingAddress());
@@ -129,6 +134,9 @@ trait Order {
         $result['cart'] = $this->getCartItems();
 
         $result['session_id'] = $this->getCheckoutSession()->getId();
+
+        $result['shipping_method'] = $quote->getShippingAddress()->getShippingMethod();
+        $result['payment_method'] = $quote->getPayment()->getMethod();
 
         return $result;
     }
@@ -203,7 +211,11 @@ trait Order {
     public function setShippingMethod($code){
         $quote = $this->getCheckoutSession()->getQuote();
 
+        $quote->getShippingAddress()->setFreeMethodWeight(0);
         $quote->getShippingAddress()->setShippingMethod($code);
+
+        $r = $quote->getShippingAddress()->requestShippingRates();
+
         $quote->getShippingAddress()->setCollectShippingRates(true);
         $quote->getShippingAddress()->collectShippingRates();
 
@@ -229,5 +241,20 @@ trait Order {
         return $this->getState();
     }
 
+    public function sendOrder(){
+        $quote = $this->getCheckoutSession()->getQuote();
+        $quote->collectTotals()->save();
+        try{
+            $service = \Mage::getModel('sales/service_quote', $quote);
+            $service->submitAll();
+            $order = $service->getOrder();
+            $order->setStatus('complete');
+            $order->save();
+        }catch(\Exception $e){
+            return ['success' => false, 'message' => $e->getMessage()];
+        }
+
+        return ['success' => true];
+    }
 
 }

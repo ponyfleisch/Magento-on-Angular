@@ -49,3 +49,4 @@ Route::post('checkout/setPaymentMethod', 'OrderController@setPaymentMethod');
 Route::post('checkout/setShippingMethod', 'OrderController@setShippingMethod');
 Route::post('checkout/setDiscountCode', 'OrderController@setDiscountCode');
 Route::get('checkout/countryList', 'OrderController@getCountryList');
+Route::post('checkout/send', 'OrderController@sendOrder');
