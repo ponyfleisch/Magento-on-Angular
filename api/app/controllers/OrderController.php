@@ -42,6 +42,10 @@ class OrderController extends BaseAPIController
         return Response::json($this->api->getCountryList());
     }
 
+    public function getRegionsByCountry($country){
+        return Response::json($this->api->getRegionsByCountry($country));
+    }
+
     public function sendOrder(){
         return Response::json($this->api->sendOrder());
     }

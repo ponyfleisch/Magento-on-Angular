@@ -50,10 +50,8 @@ trait Order {
         /** @var \Mage_Payment_Model_Method_Abstract $method */
         foreach($helper->getStoreMethods(null, $quote) as $method){
             if($method->canUseForCountry($quote->getBillingAddress()->getCountryId())){
-                $result[$method->getCode()] = $method->getTitle();
+                $result[] = ['title' => $method->getTitle(), 'id' => $method->getCode()];
             }
-
-
         }
 
         return $result;
@@ -75,7 +73,7 @@ trait Order {
 
         foreach($rates as $rate){
             foreach($rate as $choice){
-                $result[$choice->getCode()] = ['title' => $choice->getMethodTitle(), 'price' => $choice->getPrice()];
+                $result[] = ['id' => $choice->getCode(), 'title' => $choice->getMethodTitle(), 'price' => $choice->getPrice()];
             }
         }
 
@@ -149,10 +147,41 @@ trait Order {
 
         /** @var \Mage_Directory_Model_Country $country */
         foreach($countryCollection as $country){
-            $result[$country->getCountryId()] = $country->getName();
+            $result[] = [
+                'id' => $country->getCountryId(),
+                'name' => $country->getName()
+            ];
+
         }
 
+        usort($result, function($a, $b){
+            return $a['name'] > $b['name'];
+        });
+
         return $result;
+    }
+
+    public function getRegionsByCountry($country){
+        $collection = \Mage::getResourceModel('directory/region_collection')->addCountryFilter($country)->load();
+
+        $results = [];
+
+        foreach($collection as $region){
+            $results[] = [
+                'id' => $region->getId(),
+                'name' => $region->getName()
+            ];
+        }
+
+        if(count($results)){
+            usort($result, function($a, $b){
+                return $a['name'] > $b['name'];
+            });
+
+            return $results;
+        }else{
+            return false;
+        }
     }
 
     public function setShippingAddress($values){
