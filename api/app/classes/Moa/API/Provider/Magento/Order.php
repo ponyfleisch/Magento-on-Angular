@@ -88,7 +88,8 @@ trait Order {
         return $this->getCheckoutSession()->getQuote();
     }
 
-    public function getState(){
+    public function getState()
+    {
         $this->frontEndSession();
 
         // i don't know why, but without this, not all shipping methods show.
@@ -100,38 +101,82 @@ trait Order {
         $result['payment_methods'] = $this->getPaymentMethods();
         $result['shipping_methods'] = $this->getShippingMethods();
 
+        /** @var \Mage_Customer_Model_Customer $customer */
         $customer = $this->getCustomer();
+
+        $defaultShipping = $customer->getDefaultShippingAddress();
+        $defaultBilling = $customer->getDefaultBillingAddress();
 
         $result['logged_in'] = $customerSession->isLoggedIn();
 
 
         $quote = $this->getCheckoutSession()->getQuote();
 
-//
-//        $quote->getShippingAddress()->setCountryId('SG');
-//        $quote->getBillingAddress()->setCountryId('SG');
-//
-//        $quote->getShippingAddress()->setShippingMethod('flatrate_flatrate');
-//        $quote->getShippingAddress()->setCollectShippingRates(true);
-//        $quote->getShippingAddress()->collectShippingRates();
-//
-//
-//        $quote->getPayment()->importData(array('method' => 'cashondelivery'));
-//        $quote->collectTotals()->save();
+
+        /** @var \Mage_Sales_Model_Quote_Address $shippingAddress */
+        $shippingAddress = $quote->getShippingAddress();
+
+        /** @var \Mage_Sales_Model_Quote_Address $billingAddress */
+        $billingAddress = $quote->getBillingAddress();
 
 
-        // $result['countries'] = $countryCollection = \Mage::getModel('directory/country')->getResourceCollection()->load();
+        // potentially overwritten further down. beware.
+        $result['billing_address'] = $this->getAddressValues($billingAddress);
+        $result['billing_address']['id'] = $billingAddress->getId();
 
-        // $result['quote'] = $quote->getData();
+        $result['shipping_address'] = $this->getAddressValues($shippingAddress);
+        $result['shipping_address']['id'] = $shippingAddress->getId();
 
+        $result['shipping_address_validation'] = $shippingAddress->validate();
 
-        $result['billing_address'] = $this->getAddressValues($quote->getBillingAddress());
+        $result['billing_address_validation'] = $billingAddress->validate();
 
-        $result['shipping_address'] = $this->getAddressValues($quote->getShippingAddress());
+        if ($defaultShipping) {
+            if ($shippingAddress->getCustomerAddressId() == $defaultShipping->getId()) {
+                $result['shipping_address'] = 'default';
+            }
+
+            $result['default_shipping_address'] = $this->getAddressValues($defaultShipping);
+            $result['default_shipping_address']['id'] = $defaultShipping->getId();
+
+            if ($defaultShipping->getCountryModel()) {
+                $result['default_shipping_address']['country'] = $defaultShipping->getCountryModel()->getName();
+            }
+            if ($defaultShipping->getRegionModel()) {
+                $result['default_shipping_address']['region'] = $defaultShipping->getRegionModel()->getName();
+            }
+        }else{
+            $result['default_shipping_address'] = false;
+        }
+
+        if($shippingAddress->getSameAsBilling() == 1){
+            $result['shipping_address'] = 'use_billing';
+        }
+
+        if($defaultBilling){
+            if($billingAddress->getCustomerAddressId() == $defaultBilling->getId()){
+                $result['billing_address'] = 'default';
+            }
+
+            $result['default_billing_address'] = $this->getAddressValues($defaultBilling);
+            $result['default_billing_address']['id'] = $defaultBilling->getId();
+
+            if($defaultBilling->getCountryModel()){
+                $result['default_billing_address']['country'] = $defaultBilling->getCountryModel()->getName();
+            }
+            if($defaultBilling->getRegionModel()){
+                $result['default_billing_address']['region'] = $defaultBilling->getRegionModel()->getName();
+            }
+        }else{
+            $result['default_billing_address'] = false;
+        }
 
         $result['cart'] = $this->getCartItems();
 
         $result['session_id'] = $this->getCheckoutSession()->getId();
+        $result['quote_id'] = $quote->getId();
+
+        $result['customer_id'] = $quote->getCustomer()->getId();
 
         $result['shipping_method'] = $quote->getShippingAddress()->getShippingMethod();
         $result['payment_method'] = $quote->getPayment()->getMethod();
@@ -186,9 +231,28 @@ trait Order {
 
     public function setShippingAddress($values){
         $quote = $this->getCheckoutSession()->getQuote();
+
+        /** @var \Mage_Sales_Model_Quote_Address $shippingAddress */
         $address = $quote->getShippingAddress();
 
-        $this->setAddressValues($address, $values);
+        if(!is_array($values)){
+            if($values == 'default'){
+                /** @var \Mage_Customer_Model_Customer $customer */
+                $customer = $this->getCustomer();
+                $defaultShipping = $customer->getDefaultShippingAddress();
+                $this->setAddressValues($address, $defaultShipping->getData());
+                $address->setCustomerAddressId($defaultShipping->getId());
+                $address->setSameAsBilling(false);
+            }else if($values == 'use_billing'){
+                $this->setAddressValues($address, $quote->getBillingAddress()->getData());
+                $address->setSameAsBilling(true);
+//                $address->setCustomerAddressId($)
+            }
+        }else{
+            $this->setAddressValues($address, $values);
+            $address->setCustomerAddressId(null);
+            $address->setSameAsBilling(0);
+        }
 
         $quote->getShippingAddress()->setCollectShippingRates(true);
         $quote->getShippingAddress()->collectShippingRates();
@@ -202,6 +266,8 @@ trait Order {
         foreach($this->addressFields as $field){
             if(array_key_exists($field, $values)){
                 $address->setData($field, $values[$field]);
+            }else{
+                $address->setData($field, '');
             }
         }
 
@@ -228,9 +294,22 @@ trait Order {
 
     public function setBillingAddress($values){
         $quote = $this->getCheckoutSession()->getQuote();
+
+        /** @var \Mage_Sales_Model_Quote_Address $address */
         $address = $quote->getBillingAddress();
 
-        $this->setAddressValues($address, $values);
+        if(!is_array($values)){
+            if($values == 'default'){
+                /** @var \Mage_Customer_Model_Customer $customer */
+                $customer = $this->getCustomer();
+                $defaultBilling = $customer->getDefaultBillingAddress();
+                $this->setAddressValues($address, $defaultBilling->getData());
+                $address->setCustomerAddressId($defaultBilling->getId());
+            }
+        }else{
+            $this->setAddressValues($address, $values);
+            $address->setCustomerAddressId(null);
+        }
 
         $this->saveState();
 
