@@ -181,6 +181,14 @@ trait Order {
         $result['shipping_method'] = $quote->getShippingAddress()->getShippingMethod();
         $result['payment_method'] = $quote->getPayment()->getMethod();
 
+        $result['totals'] = [];
+
+        $totals = $quote->getTotals();
+
+        foreach($totals as $total){
+            $result['totals'][$total->getCode()] = ['title' => $total->getTitle(), 'value' => $total->getValue()];
+        }
+
         return $result;
     }
 
@@ -358,6 +366,16 @@ trait Order {
             $order = $service->getOrder();
             $order->setStatus('complete');
             $order->save();
+
+            /** @var \Mage_Checkout_Model_Cart $cart */
+            $cart = \Mage::getSingleton('checkout/cart');
+
+
+            /** @var \Mage_Sales_Model_Quote_Item $item */
+            foreach($quote->getAllVisibleItems() as $item){
+                $this->removeCartItem($item->getId());
+            }
+
         }catch(\Exception $e){
             return ['success' => false, 'message' => $e->getMessage()];
         }
