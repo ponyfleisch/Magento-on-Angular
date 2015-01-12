@@ -34,10 +34,6 @@ class OrderController extends BaseAPIController
         return Response::json($this->api->setShippingMethod(Input::get('code')));
     }
 
-    public function setDiscountCode(){
-
-    }
-
     public function getCountryList(){
         return Response::json($this->api->getCountryList());
     }
@@ -50,4 +46,7 @@ class OrderController extends BaseAPIController
         return Response::json($this->api->sendOrder());
     }
 
+    public function setCouponCode(){
+    return Response::json($this->api->setCouponCode(Input::get('code')));
+}
 }

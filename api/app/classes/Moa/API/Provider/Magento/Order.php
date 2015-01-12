@@ -176,6 +176,8 @@ trait Order {
         $result['session_id'] = $this->getCheckoutSession()->getId();
         $result['quote_id'] = $quote->getId();
 
+        $result['coupon_code'] = $quote->getCouponCode();
+
         $result['customer_id'] = $quote->getCustomer()->getId();
 
         $result['shipping_method'] = $quote->getShippingAddress()->getShippingMethod();
@@ -381,6 +383,15 @@ trait Order {
         }
 
         return ['success' => true];
+    }
+
+    public function setCouponCode($code){
+        $quote = $this->getCheckoutSession()->getQuote();
+        $quote->setCouponCode($code);
+
+        $quote->collectTotals();
+
+        return $this->getState();
     }
 
 }

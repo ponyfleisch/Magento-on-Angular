@@ -47,7 +47,7 @@ Route::post('checkout/setBillingAddress', 'OrderController@setBillingAddress');
 
 Route::post('checkout/setPaymentMethod', 'OrderController@setPaymentMethod');
 Route::post('checkout/setShippingMethod', 'OrderController@setShippingMethod');
-Route::post('checkout/setDiscountCode', 'OrderController@setDiscountCode');
 Route::get('checkout/countryList', 'OrderController@getCountryList');
 Route::get('checkout/regionsByCountry/{country}', 'OrderController@getRegionsByCountry');
 Route::post('checkout/send', 'OrderController@sendOrder');
+Route::post('checkout/setCouponCode', 'OrderController@setCouponCode');
