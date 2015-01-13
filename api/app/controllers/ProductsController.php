@@ -28,6 +28,13 @@ class ProductsController extends BaseAPIController {
         return Response::json($this->api->getProductsByFilter($pagesize, $currentpage));
     }
 
+    public function getSearchProducts(){
+        $keyword = Input::get('keyword');
+        $queryId = intval(Input::get('queryId'));
+        $pageSize = intval(Input::get('pageSize'))?:12;
+        $pageNumber = intval(Input::get('pageNumber'))?:1;
 
+        return Response::json($this->api->getProductsByKeyword($keyword, $queryId, $pageSize, $pageNumber));
+    }
 
 }

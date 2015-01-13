@@ -293,11 +293,14 @@ trait Product {
 
         $products = $collection->load();
 
+        $output = $this->getProductInfoByCollection($products);
+
+        return $output;
+    }
+
+    protected function getProductInfoByCollection($collection){
         $output = [];
-
-        /** @var \Mage_Catalog_Model_Product $product */
-        foreach($products as $product){
-
+        foreach($collection as $product){
             /** @var \Mage_Catalog_Helper_Image $image */
             $image = \Mage::helper('catalog/image')->init($product, 'small_image')->resize(135)->__toString();
 
@@ -401,4 +404,44 @@ trait Product {
         return $items;
     }
 
+    public function getProductsByKeyword($keyword=null, $queryId=null, $pageSize=12, $currentPage=1){
+        /** @var \Mage_CatalogSearch_Model_Resource_Fulltext $search */
+        $search = \Mage::getResourceModel('catalogsearch/fulltext');
+
+        /** @var \Mage_CatalogSearch_Model_Query $query */
+        if($queryId){
+            $query = \Mage::getModel('catalogsearch/query')->load($queryId)->prepare();
+        }else{
+            $query = \Mage::getModel('catalogsearch/query')->loadByQueryText($searchText)->prepare();
+        }
+
+        $search->prepareResult(\Mage::getModel('catalogsearch/fulltext'), $keyword, $query);
+
+        /** @var \Mage_Catalog_Model_Resource_Product_Collection $collection */
+        $collection = \Mage::getResourceModel('catalog/product_collection');
+
+        $collection->addAttributeToSelect('*');
+        $collection->addAttributeToFilter('visibility', array('neq' => 1));
+        $collection->addAttributeToFilter('status', 1);
+        
+        
+        $collection->getSelect()->joinInner(
+            array('search_result' => $collection->getTable('catalogsearch/result')),
+            $collection->getConnection()->quoteInto(
+                'search_result.product_id=e.entity_id AND search_result.query_id=?',
+                $query->getId()
+            ),
+            array('relevance' => 'relevance')
+        );
+
+        $collection->setPageSize($pageSize);
+        $collection->setCurPage($currentPage);
+
+
+        $results = [];
+        $results['queryId'] = $query->getId();
+        $results['products'] = $this->getProductInfoByCollection($collection->load());
+
+        return $results;
+    }
 }

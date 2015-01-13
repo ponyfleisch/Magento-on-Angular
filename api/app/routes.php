@@ -51,3 +51,5 @@ Route::get('checkout/countryList', 'OrderController@getCountryList');
 Route::get('checkout/regionsByCountry/{country}', 'OrderController@getRegionsByCountry');
 Route::post('checkout/send', 'OrderController@sendOrder');
 Route::post('checkout/setCouponCode', 'OrderController@setCouponCode');
+
+Route::post('search/', 'ProductsController@getSearchProducts');
