@@ -423,7 +423,7 @@ trait Product {
         $collection->addAttributeToSelect('*');
         $collection->addAttributeToFilter('visibility', array('neq' => 1));
         $collection->addAttributeToFilter('status', 1);
-        
+        $collection->addAttributeToSort('status', 'DESC');
         
         $collection->getSelect()->joinInner(
             array('search_result' => $collection->getTable('catalogsearch/result')),
