@@ -9,6 +9,8 @@ namespace Moa\API\Provider\Magento;
  */
 trait Account {
 
+    protected $profileFields = ['dbirth', 'country', 'phone', 'shoe', 'bottom', 'top'];
+
     /**
      * @method getCustomerModel
      * @return Mage_Customer_Model_Customer
@@ -99,7 +101,13 @@ trait Account {
         }
 
         // Gather the user data, and MD5 the email address for use with Gravatar.
-        $datum = \Mage::helper('customer')->getCustomer()->getData();
+        /** @var \Mage_Customer_Model_Customer $customer */
+        $customer = \Mage::helper('customer')->getCustomer();
+        $datum = $customer->getData();
+
+        $datum['dob'] = $customer->getDbirth();
+        $datum['country'] = $customer->getCrap();
+
         $datum['gravatar'] = md5($datum['email']);
 
         // Otherwise the user is logged in. Voila!
